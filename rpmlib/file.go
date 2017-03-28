@@ -32,9 +32,9 @@ func ReadPackageFile(file *os.File) (pkg *PackageFile, err error) {
 	}
 
 	// for debug
-	for _, index := range pkg.Header.header.indexes {
-		fmt.Printf("tag = %05d type = %05d count =%d\n", index.Tag, index.Type, index.Count)
-	}
+//	for _, index := range pkg.Header.header.indexes {
+//		fmt.Printf("tag = %05d type = %05d count =%d\n", index.Tag, index.Type, index.Count)
+//	}
 
 	return
 }
