@@ -1,10 +1,10 @@
 package rpmlib
 
 import (
-	"os"
-	"fmt"
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	"os"
 	"time"
 )
 
@@ -135,7 +135,7 @@ func (header *Header) BuildDate() (buildtime time.Time) {
 
 	var t int32
 	binary.Read(bytes.NewReader(store), binary.BigEndian, &t)
-	
+
 	buildtime = time.Unix(int64(t), 0)
 
 	return
@@ -181,7 +181,7 @@ func (header *Header) FileList() (filenames []string, err error) {
 		readerr := binary.Read(reader, binary.BigEndian, &index)
 		if readerr != nil {
 			break
-		}	
+		}
 		dirindexes = append(dirindexes, index)
 	}
 
@@ -190,8 +190,73 @@ func (header *Header) FileList() (filenames []string, err error) {
 	}
 
 	for i, basename := range basenames {
-		filenames = append(filenames, dirnames[dirindexes[i]] + basename)
+		filenames = append(filenames, dirnames[dirindexes[i]]+basename)
+	}
+
+	return
+}
+
+func (header *Header) Changelog() (logs []Changelog, err error) {
+	if !header.Section.HasStore(RPMTAG_CHANGELOGNAME) ||
+		!header.Section.HasStore(RPMTAG_CHANGELOGTEXT) ||
+		!header.Section.HasStore(RPMTAG_CHANGELOGTIME) {
+		return nil, fmt.Errorf("No changelog found")
+	}
+
+	// Already checked it exists.
+	store, _, _ := header.Section.GetStore(RPMTAG_CHANGELOGNAME)
+
+	buffer := bytes.NewBuffer(store)
+
+	var lognames []string
+	for {
+		s, err := buffer.ReadString(0)
+		if err != nil {
+			break
+		}
+		lognames = append(lognames, s)
+	}
+
+	store, _, _ = header.Section.GetStore(RPMTAG_CHANGELOGTEXT)
+
+	buffer = bytes.NewBuffer(store)
+
+	var logtexts []string
+	for {
+		s, err := buffer.ReadString(0)
+		if err != nil {
+			break
+		}
+		logtexts = append(logtexts, s)
 	}
 	
+	store, _, _ = header.Section.GetStore(RPMTAG_CHANGELOGTIME)
+
+	buffer = bytes.NewBuffer(store)
+
+	var logtimes []time.Time
+	for {
+		var unixtime int32
+		err := binary.Read(buffer, binary.BigEndian, &unixtime)
+		if err != nil {
+			break
+		}
+		logtimes = append(logtimes, time.Unix(int64(unixtime), 0))
+	}
+
+	if len(lognames) == len(logtexts) && len(lognames) == len(logtimes) {
+		for i, _ := range lognames {
+			logs = append(logs, Changelog{lognames[i], logtexts[i], logtimes[i]})
+		}
+	} else {
+		return nil, fmt.Errorf("name, text, time array size are different")	
+	}
+
 	return
+}
+
+type Changelog struct {
+	Name string
+	Text string
+	Date time.Time
 }

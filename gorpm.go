@@ -7,11 +7,7 @@ import (
 	"os"
 )
 
-func PrintPackageInformation(filename string) (err error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return
-	}
+func PrintPackageInformation(file *os.File) (err error) {
 
 	pkg, err := rpmlib.ReadPackageFile(file)
 	if err != nil {
@@ -32,12 +28,7 @@ func PrintPackageInformation(filename string) (err error) {
 	return
 }
 
-func PrintPackagedFiles(filename string) (err error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return
-	}
-
+func PrintPackagedFiles(file *os.File) (err error) {
 	pkg, err := rpmlib.ReadPackageFile(file)
 	if err != nil {
 		return
@@ -55,21 +46,35 @@ func PrintPackagedFiles(filename string) (err error) {
 	return
 }
 
-func PrintPackageChangelog(filename string) (err error) {
+func PrintPackageChangelog(file *os.File) (err error) {
+	pkg, err := rpmlib.ReadPackageFile(file)
+	if err != nil {
+		return
+	}
+
+	changelogs, err := pkg.Header.Changelog()
+	if err != nil {
+		return
+	}
+
+	for _, log := range changelogs {
+		fmt.Printf("* %s %s\n", log.Date, log.Name)	
+		fmt.Printf("- %s\n\n", log.Text)
+	}
 
 	return
 }
 
 type Option struct {
-	ShowInfoMode bool
-	ShowFileMode bool
+	ShowInfoMode      bool
+	ShowFileMode      bool
 	ShowChangelogMode bool
 }
 
 func addOption(option *Option) {
 	flag.BoolVar(&option.ShowInfoMode, "i", false, "Show package inforamtion.")
 	flag.BoolVar(&option.ShowFileMode, "l", false, "Show package files.")
-	flag.BoolVar(&option.ShowFileMode, "c", false, "Show changelog.")
+	flag.BoolVar(&option.ShowChangelogMode, "c", false, "Show changelog.")
 }
 
 func main() {
@@ -84,22 +89,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	if option.ShowInfoMode {
-		for _, filename := range flag.Args() {
-			err := PrintPackageInformation(filename)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err)
-			}
+	for _, filename := range flag.Args() {
+		file, err := os.Open(filename)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			continue
 		}
-	} else if option.ShowFileMode {
-		for _, filename := range flag.Args() {
-			err := PrintPackagedFiles(filename)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err)
-			}
+
+		if option.ShowInfoMode {
+			err = PrintPackageInformation(file)
+		} else if option.ShowFileMode {
+			err = PrintPackagedFiles(file)
+		} else if option.ShowChangelogMode {
+			err = PrintPackageChangelog(file)
 		}
-	} else if option.ShowChangelogMode {
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+		}
 		
+		file.Close()
 	}
 
 	os.Exit(0)
