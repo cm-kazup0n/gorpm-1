@@ -5,3 +5,8 @@ Version 0.1 2017-03-28
 - Implements -i (information) option
 - Implements -l (file list) option
 
+-------------------------------------
+Version 0.1.1 2017-03-29
+
+- Implements -d, -c, -changelog option
+

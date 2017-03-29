@@ -46,6 +46,32 @@ func PrintPackagedFiles(file *os.File) (err error) {
 	return
 }
 
+func PrintPackageFileOf(file *os.File, filetype int32) (err error) {
+	pkg, err := rpmlib.ReadPackageFile(file)
+	if err != nil {
+		return
+	}
+
+	filenames, err := pkg.Header.FileList()
+	if err != nil {
+		return
+	}
+
+	flags := pkg.Header.FileFlags()
+
+	if len(flags) != len(filenames) {
+		return fmt.Errorf("Included filenames size and flag size are different")
+	}
+
+	for i, filename := range filenames {
+		if flags[i]&filetype != 0 {
+			fmt.Println(filename)
+		}
+	}
+
+	return
+}
+
 func PrintPackageChangelog(file *os.File) (err error) {
 	pkg, err := rpmlib.ReadPackageFile(file)
 	if err != nil {
@@ -58,7 +84,7 @@ func PrintPackageChangelog(file *os.File) (err error) {
 	}
 
 	for _, log := range changelogs {
-		fmt.Printf("* %s %s\n", log.Date, log.Name)	
+		fmt.Printf("* %s %s\n", log.Date, log.Name)
 		fmt.Printf("- %s\n\n", log.Text)
 	}
 
@@ -66,15 +92,24 @@ func PrintPackageChangelog(file *os.File) (err error) {
 }
 
 type Option struct {
-	ShowInfoMode      bool
-	ShowFileMode      bool
-	ShowChangelogMode bool
+	ShowInfoMode       bool
+	ShowFileMode       bool
+	ShowConfigFileMode bool
+	ShowDocFileMode    bool
+	ShowChangelogMode  bool
+	VerificationMode   bool
+	CheckSignatureMode bool
 }
 
 func addOption(option *Option) {
 	flag.BoolVar(&option.ShowInfoMode, "i", false, "Show package inforamtion.")
-	flag.BoolVar(&option.ShowFileMode, "l", false, "Show package files.")
-	flag.BoolVar(&option.ShowChangelogMode, "c", false, "Show changelog.")
+	flag.BoolVar(&option.ShowFileMode, "l", false, "Show files included package.")
+	flag.BoolVar(&option.ShowConfigFileMode, "c", false, "Show config files included package.")
+	flag.BoolVar(&option.ShowDocFileMode, "d", false, "Show doc files included package.")
+	flag.BoolVar(&option.ShowChangelogMode, "changelog", false, "Show changelog.")
+//	flag.BoolVar(&option.VerificationMode, "V", false,
+//		"Verify file's size, checksum, permission, type, user and group.")
+	//flag.BoolVar(&option.CheckSignatureMode, "checksig", false, "Check all digests and signatures"
 }
 
 func main() {
@@ -100,14 +135,19 @@ func main() {
 			err = PrintPackageInformation(file)
 		} else if option.ShowFileMode {
 			err = PrintPackagedFiles(file)
+		} else if option.ShowConfigFileMode {
+			err = PrintPackageFileOf(file, rpmlib.RPMFILE_CONFIG)
+		} else if option.ShowDocFileMode {
+			err = PrintPackageFileOf(file, rpmlib.RPMFILE_DOC)
 		} else if option.ShowChangelogMode {
 			err = PrintPackageChangelog(file)
+//		} else if option.VerificationMode {
 		}
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 		}
-		
+
 		file.Close()
 	}
 

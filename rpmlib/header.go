@@ -98,6 +98,23 @@ func (header *Header) Size() (size int32) {
 	return
 }
 
+func (header *Header) FileFlags() (flags []int32) {
+	store, _, _ := header.Section.GetStore(RPMTAG_FILEFLAGS)	
+
+	reader := bytes.NewReader(store)
+	
+	for {
+		var flag int32
+		err := binary.Read(reader, binary.BigEndian, &flag)
+		if err != nil {
+			break
+		}
+
+		flags = append(flags, flag)
+	}
+	return
+}
+
 func (header *Header) Summary() (summary string) {
 	store, _, _ := header.Section.GetStore(RPMTAG_SUMMARY)
 
@@ -142,55 +159,67 @@ func (header *Header) BuildDate() (buildtime time.Time) {
 }
 
 func (header *Header) FileList() (filenames []string, err error) {
-	if !header.Section.HasStore(RPMTAG_BASENAMES) ||
-		!header.Section.HasStore(RPMTAG_DIRNAMES) ||
-		!header.Section.HasStore(RPMTAG_DIRINDEXES) {
-		return
-	}
+	if header.Section.HasStore(RPMTAG_BASENAMES) &&
+		header.Section.HasStore(RPMTAG_DIRNAMES) &&
+		header.Section.HasStore(RPMTAG_DIRINDEXES) {
 
-	// Get filename list(basename)
-	store, _, _ := header.Section.GetStore(RPMTAG_BASENAMES)
-	buffer := bytes.NewBuffer(store)
+		// Get filename list(basename)
+		store, _, _ := header.Section.GetStore(RPMTAG_BASENAMES)
+		buffer := bytes.NewBuffer(store)
 
-	var basenames []string
-	for {
-		s, err := buffer.ReadString(0)
-		if err != nil {
-			break
+		var basenames []string
+		for {
+			s, err := buffer.ReadString(0)
+			if err != nil {
+				break
+			}
+			basenames = append(basenames, s)
 		}
-		basenames = append(basenames, s)
-	}
 
-	store, _, _ = header.Section.GetStore(RPMTAG_DIRNAMES)
-	buffer = bytes.NewBuffer(store)
+		store, _, _ = header.Section.GetStore(RPMTAG_DIRNAMES)
+		buffer = bytes.NewBuffer(store)
 
-	var dirnames []string
-	for {
-		s, err := buffer.ReadString(0)
-		if err != nil {
-			break
+		var dirnames []string
+		for {
+			s, err := buffer.ReadString(0)
+			if err != nil {
+				break
+			}
+			dirnames = append(dirnames, s)
 		}
-		dirnames = append(dirnames, s)
-	}
 
-	var dirindexes []int32
-	store, _, _ = header.Section.GetStore(RPMTAG_DIRINDEXES)
-	reader := bytes.NewReader(store)
-	for {
-		var index int32
-		readerr := binary.Read(reader, binary.BigEndian, &index)
-		if readerr != nil {
-			break
+		var dirindexes []int32
+		store, _, _ = header.Section.GetStore(RPMTAG_DIRINDEXES)
+		reader := bytes.NewReader(store)
+		for {
+			var index int32
+			readerr := binary.Read(reader, binary.BigEndian, &index)
+			if readerr != nil {
+				break
+			}
+			dirindexes = append(dirindexes, index)
 		}
-		dirindexes = append(dirindexes, index)
-	}
 
-	if len(dirindexes) != len(basenames) {
-		return nil, fmt.Errorf("directory indexes length differente from length of basenames")
-	}
+		if len(dirindexes) != len(basenames) {
+			return nil, fmt.Errorf("directory indexes length differente from length of basenames")
+		}
 
-	for i, basename := range basenames {
-		filenames = append(filenames, dirnames[dirindexes[i]]+basename)
+		for i, basename := range basenames {
+			filenames = append(filenames, dirnames[dirindexes[i]]+basename)
+		}
+	} else if header.Section.HasStore(RPMTAG_OLDFILENAMES) {
+		store, _, _ := header.Section.GetStore(RPMTAG_OLDFILENAMES)
+		buffer := bytes.NewBuffer(store)
+
+		for {
+			s, err := buffer.ReadString(0)
+			if err != nil {
+				break
+			}
+			filenames = append(filenames, s)
+		}
+	} else {
+		err = fmt.Errorf("File list data not presented")
 	}
 
 	return
@@ -200,7 +229,8 @@ func (header *Header) Changelog() (logs []Changelog, err error) {
 	if !header.Section.HasStore(RPMTAG_CHANGELOGNAME) ||
 		!header.Section.HasStore(RPMTAG_CHANGELOGTEXT) ||
 		!header.Section.HasStore(RPMTAG_CHANGELOGTIME) {
-		return nil, fmt.Errorf("No changelog found")
+
+		return nil, fmt.Errorf("No changelog data found")
 	}
 
 	// Already checked it exists.
@@ -229,7 +259,7 @@ func (header *Header) Changelog() (logs []Changelog, err error) {
 		}
 		logtexts = append(logtexts, s)
 	}
-	
+
 	store, _, _ = header.Section.GetStore(RPMTAG_CHANGELOGTIME)
 
 	buffer = bytes.NewBuffer(store)
@@ -249,7 +279,7 @@ func (header *Header) Changelog() (logs []Changelog, err error) {
 			logs = append(logs, Changelog{lognames[i], logtexts[i], logtimes[i]})
 		}
 	} else {
-		return nil, fmt.Errorf("name, text, time array size are different")	
+		return nil, fmt.Errorf("Changelog's name, text, time array size are different")
 	}
 
 	return
