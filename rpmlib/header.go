@@ -30,7 +30,6 @@ type Header struct {
 }
 
 func ScanHeader(file *os.File) (header *Header, err error) {
-	err = SkipSignature(file)
 	if err != nil {
 		return
 	}
@@ -95,6 +94,14 @@ func (header *Header) Size() (size int32) {
 
 	binary.Read(bytes.NewReader(store), binary.BigEndian, &size)
 
+	return
+}
+
+func (header *Header) PayloadCompressor() (name string) {
+	store, _, _ := header.Section.GetStore(RPMTAG_PAYLOADCOMPRESSOR)
+
+	name = string(store)
+	
 	return
 }
 

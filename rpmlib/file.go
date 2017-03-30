@@ -9,6 +9,7 @@ type PackageFile struct {
 	Lead      *Lead
 	Signature *Signature
 	Header    *Header
+	Payload *Payload
 }
 
 func ReadPackageFile(file *os.File) (pkg *PackageFile, err error) {
@@ -25,7 +26,20 @@ func ReadPackageFile(file *os.File) (pkg *PackageFile, err error) {
 		return
 	}
 
+	// Data store size is always 8 byte boundary
+	boundary := pkg.Signature.header.hsize % 8
+	if boundary != 0 {
+		file.Seek(int64(boundary), os.SEEK_CUR)
+	}
+
 	pkg.Header, err = ScanHeader(file)
+
+	if err != nil {
+		return
+	}
+
+	compressor := pkg.Header.PayloadCompressor()
+	pkg.Payload, err = ScanPayload(file, compressor)
 
 	if err != nil {
 		return

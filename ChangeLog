@@ -10,3 +10,8 @@ Version 0.1.1 2017-03-29
 
 - Implements -d, -c, -changelog option
 
+-------------------------------------
+Version 0.1.2 2017-03-30
+
+- Implements -decompress option
+

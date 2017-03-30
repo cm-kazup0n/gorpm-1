@@ -91,14 +91,32 @@ func PrintPackageChangelog(file *os.File) (err error) {
 	return
 }
 
+func Decompress(file *os.File) (err error) {
+	pkg, err := rpmlib.ReadPackageFile(file)
+	if err != nil {
+		return
+	}
+
+	cpio := pkg.Payload.Cpio()
+
+	n, err := os.Stdout.Write(cpio)
+
+	if n != len(cpio) {
+		err = fmt.Errorf("Cannot write all bytes to stdout")
+	}
+
+	return
+}
+
 type Option struct {
 	ShowInfoMode       bool
 	ShowFileMode       bool
 	ShowConfigFileMode bool
 	ShowDocFileMode    bool
 	ShowChangelogMode  bool
-	VerificationMode   bool
-	CheckSignatureMode bool
+//	VerificationMode   bool
+//	CheckSignatureMode bool
+	DecompressMode		bool
 }
 
 func addOption(option *Option) {
@@ -107,6 +125,7 @@ func addOption(option *Option) {
 	flag.BoolVar(&option.ShowConfigFileMode, "c", false, "Show config files included package.")
 	flag.BoolVar(&option.ShowDocFileMode, "d", false, "Show doc files included package.")
 	flag.BoolVar(&option.ShowChangelogMode, "changelog", false, "Show changelog.")
+	flag.BoolVar(&option.DecompressMode, "decompress", false, "Dump CPIO archive data to stdout (rpm2cpio)")
 //	flag.BoolVar(&option.VerificationMode, "V", false,
 //		"Verify file's size, checksum, permission, type, user and group.")
 	//flag.BoolVar(&option.CheckSignatureMode, "checksig", false, "Check all digests and signatures"
@@ -141,6 +160,8 @@ func main() {
 			err = PrintPackageFileOf(file, rpmlib.RPMFILE_DOC)
 		} else if option.ShowChangelogMode {
 			err = PrintPackageChangelog(file)
+		} else if option.DecompressMode {
+			err = Decompress(file)
 //		} else if option.VerificationMode {
 		}
 

@@ -23,28 +23,6 @@ type Signature struct {
 	Section
 }
 
-func SkipSignature(file *os.File) (err error) {
-	_, err = file.Seek(0, os.SEEK_SET)
-	if err != nil {
-		return
-	}
-
-	err = SkipLead(file)
-	if err != nil {
-		return
-	}
-
-	signature, err := scanSection(file)
-
-	// Data store size is always 8 byte boundary
-	boundary := signature.header.hsize % 8
-	if boundary != 0 {
-		file.Seek(int64(boundary), os.SEEK_CUR)
-	}
-
-	return
-}
-
 //
 // Required
 //
@@ -75,15 +53,6 @@ func (sig *Signature) MD5() (bin []byte, err error) {
 }
 
 func ScanSignature(file *os.File) (signature *Signature, err error) {
-	_, err = file.Seek(0, os.SEEK_SET)
-	if err != nil {
-		return
-	}
-
-	err = SkipLead(file)
-	if err != nil {
-		return
-	}
 
 	section, err := scanSection(file)
 	if err != nil {
