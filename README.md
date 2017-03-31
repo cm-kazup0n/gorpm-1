@@ -5,8 +5,8 @@ RPM commmand line utility implemented in Go language
 
 ## Description
 RPM commmand line utility implemented in Go language.
-This 'gorpm' command aims to get RPM package's information at such as 
-Windows, debian,which does not have yum/rpm command. 
+This 'gorpm' and other commands aim to get RPM package's 
+information at such as Windows, debian,which does not have yum/rpm command. 
 So this command is not for package management on RHEL or CentOS.
 
 This is my first 'decent' Go language project for practicing.
@@ -23,7 +23,9 @@ $ go get github.com/necomeshi/gorpm
 $ go install github.com/necomeshi/gorpm
 ```
 
-## Usage
+## Usages
+
+### gorpm
 
 * Show package information
 
@@ -71,6 +73,31 @@ $ gorpm -i rpm-4.8.0-55.el6.x86_64.rpm
 /usr/lib/rpm/platform/amd64-linux
 /usr/lib/rpm/platform/amd64-linux/macros
 ~ ~ ~
+```
+
+* Verify RPM Package
+
+``` 
+$ gorpm -V <RPM Package>
+```
+
+This option is not full compatibility for `rpm -qV`
+Currently, verify file's size, mode, mtime and checksum.
+
+
+### gorpm2cpio
+Reimplementaion of rpm2cpio command.
+
+``` 
+$ gorpm2cpio <RPM Package>
+```
+
+CPIO archive data is dumped to stdout.
+So if you want take out files from archive, in the same way rpm2cpio,
+hit following command.
+
+```
+$ gorpm2cpio | cpio -id
 ```
 
 ## FAQ

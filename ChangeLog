@@ -15,3 +15,10 @@ Version 0.1.2 2017-03-30
 
 - Implements -decompress option
 
+-------------------------------------
+Version 0.1.2 2017-03-30
+
+- Remove -decompress option, and add gorpm2cpio command
+- Implements -V verification option
+- section.go: add some methods to access data store and convert it.
+

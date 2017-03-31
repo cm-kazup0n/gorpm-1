@@ -2,6 +2,7 @@ package rpmlib
 
 import (
 	"encoding/binary"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -24,58 +25,6 @@ const (
 	SectionHeaderMagicSize    = 3
 	SectionHeaderReservedSize = 4
 )
-const (
-	// Header private
-	RPMTAG_HEADERSIGNATURES = 62
-	RPMTAG_HEADERIMMUTABLE  = 63
-	RPMTAG_HEADER18NTABLE   = 100
-
-	RPMTAG_NAME              = 1000
-	RPMTAG_VERSION           = 1001
-	RPMTAG_RELEASE           = 1002
-	RPMTAG_SUMMARY           = 1004
-	RPMTAG_DESCRIPTION       = 1005
-	RPMTAG_BUILDTIME         = 1006
-	RPMTAG_BUILDHOST         = 1007
-	RPMTAG_SIZE              = 1009
-	RPMTAG_DISTRIBUTION      = 1010
-	RPMTAG_VERNDOR           = 1011
-	RPMTAG_LICENCE           = 1014
-	RPMTAG_PACKAGER          = 1015
-	RPMTAG_GROUP             = 1016
-	RPMTAG_URL               = 1020
-	RPMTAG_OS                = 1021
-	RPMTAG_ARCH              = 1022
-	RPMTAG_OLDFILENAMES      = 1027
-	RPMTAG_FILESIZES         = 1028
-	RPMTAG_FILEMODES         = 1030
-	RPMTAG_FILERDEVS         = 1033
-	RPMTAG_FILEMTIMES        = 1034
-	RPMTAG_FILEMD5S          = 1035
-	RPMTAG_FILEFLAGS         = 1037
-	RPMTAG_FILEUSERNAME      = 1039
-	RPMTAG_FILEGROUPNAME     = 1040
-	RPMTAG_SOURCERPM         = 1044
-	RPMTAG_ARCHIVESIZE       = 1046
-	RPMTAG_RPMVERSION        = 1064
-	RPMTAG_CHANGELOGTIME     = 1080
-	RPMTAG_CHANGELOGNAME     = 1081
-	RPMTAG_CHANGELOGTEXT     = 1082
-	RPMTAG_COOKIE            = 1094
-	RPMTAG_DIRINDEXES        = 1116
-	RPMTAG_BASENAMES         = 1117
-	RPMTAG_DIRNAMES          = 1118
-	RPMTAG_DISTURL           = 1123
-	RPMTAG_PAYLOADFORMAT     = 1124
-	RPMTAG_PAYLOADCOMPRESSOR = 1125
-	RPMTAG_PAYLOAD_FLAGS     = 1126
-)
-
-const (
-	RPMFILE_CONFIG = 1
-	RPMFILE_DOC    = 1 << 1
-)
-
 var SectionHeaderMagic []byte = []byte{0x8e, 0xad, 0xe8}
 
 type SectionHeaderIndex struct {
@@ -213,6 +162,107 @@ func (section *Section) HasStore(tag int32) (found bool) {
 			break
 		}
 	}
+	return
+}
+
+func (section *Section) GetInt16(tag int32) (value int16, err error) {
+	store, _, err := section.GetStore(tag)
+
+	if err != nil {
+		return
+	}
+
+	buffer := bytes.NewBuffer(store)
+	err = binary.Read(buffer, binary.BigEndian, &value)
+	
+	return
+}
+
+func (section *Section) GetInt16Array(tag int32) (value_list []int16, err error) {
+	store, _, err := section.GetStore(tag)
+
+	if err != nil {
+		return
+	}
+
+	buffer := bytes.NewBuffer(store)
+	for {
+		var value int16
+		err := binary.Read(buffer, binary.BigEndian, &value)
+		if err != nil {
+			break
+		}
+		value_list = append(value_list, value)	
+	}
+	return
+	
+}
+
+func (section *Section) GetInt32(tag int32) (value int32, err error) {
+	store, _, err := section.GetStore(tag)
+
+	if err != nil {
+		return
+	}
+
+	buffer := bytes.NewBuffer(store)
+	err = binary.Read(buffer, binary.BigEndian, &value)
+	
+	return
+}
+
+func (section *Section) GetInt32Array(tag int32) (value_list []int32, err error) {
+	store, _, err := section.GetStore(tag)
+
+	if err != nil {
+		return
+	}
+
+	buffer := bytes.NewBuffer(store)
+	for {
+		var value int32
+		err := binary.Read(buffer, binary.BigEndian, &value)
+		if err != nil {
+			break
+		}
+		value_list = append(value_list, value)	
+	}
+	return
+	
+}
+
+func (section *Section) GetString(tag int32) (value string, err error) {
+	store, _, err := section.GetStore(tag)
+
+	if err != nil {
+		return
+	}
+
+	value = string(store)
+
+	return
+}
+
+func (section *Section) GetStringArray(tag int32) (value_list []string, err error) {
+	store, _, err := section.GetStore(tag)
+
+	if err != nil {
+		return
+	}
+
+	buffer := bytes.NewBuffer(store)
+
+	for {
+		// byte arrays are separated by NULL byte(0). Read until NULL byte
+		a, err := buffer.ReadBytes(0)
+		if err != nil {
+			break
+		}
+
+		// Last index has a NULL byte, Ignore it.
+		value_list = append(value_list, string(a[:len(a) - 1]))
+	}
+
 	return
 }
 
