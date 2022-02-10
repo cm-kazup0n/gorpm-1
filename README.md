@@ -15,12 +15,11 @@ If you found any mistakes or bugs in command, please tell me.
 ## Installation
 
 ```
-$ mkidr gorpm
-$ cd gorpm
-$ export GOROOT=<Your Go language tools path>
-$ export GOPATH=${PWD}
-$ go get github.com/necomeshi/gorpm
-$ go install github.com/necomeshi/gorpm
+$ git clone　git@github.com:cm-kazup0n/gorpm-1.git
+$ cd gorpm-1
+$ make
+$ ls build/
+gorpm  gorpm2cpio
 ```
 
 ## Usages
