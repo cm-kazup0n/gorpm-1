@@ -6,7 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"xi2.org/x/xz"
+	"github.com/xi2/xz"
 )
 
 type Payload struct {

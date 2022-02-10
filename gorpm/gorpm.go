@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/necomeshi/gorpm/rpmlib"
+	"github.com/pombredanne/gorpm-1/rpmlib"
 	"os"
 )
 

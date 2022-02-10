@@ -3,7 +3,7 @@ package rpmlib
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/necomeshi/gorpm/cpio"
+	"github.com/pombredanne/gorpm-1/cpio"
 	"io"
 	"os"
 )

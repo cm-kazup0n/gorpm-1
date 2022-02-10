@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/necomeshi/gorpm/rpmlib"
+	"github.com/pombredanne/gorpm-1/rpmlib"
 	"os"
 )
 
